@@ -1,0 +1,14 @@
+version: '3'
+services:
+  camel:
+    container_name: camel
+    build: .
+    image: camel:latest
+    ports:
+      - "8001:80"
+      - "8002:443"
+    volumes:
+      - "./data:/data"
+    environment:
+      - DEBUG=
+    restart: always
