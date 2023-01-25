@@ -10,5 +10,6 @@ services:
     volumes:
       - "./data:/data"
     environment:
+      - NODE_ENV=production
       - DEBUG=
     restart: always

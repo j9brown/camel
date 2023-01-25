@@ -17,6 +17,9 @@ or load them into your CNC software to begin manufacturing right away!
 
 To use the Camel web application, you must [subscribe to it in the OnShape App Store](https://appstore.onshape.com/apps/CAM/I4R3GCXD4XN6MBLZ3LHPI5VGCVARDSCVUGE5QHY=/description). It's free and open source.
 
+After you've subscribed to the application, you will find the new Camel panel in the right side of
+your OnShape Part Studios.
+
 ## Permissions
 
 Here's an explanation of the permissions requested by the application:
@@ -73,7 +76,7 @@ You'll need to be familiar with Docker and with how to set up a web server.
   * Panel
     * **Name**: `CAM panel`
     * **Context**: `Element right panel`
-    * **Action URL**: `https://example.com/view/cam?di={$documentId}&wv={$workspaceOrVersion}&wvi={$workspaceOrVersionId}&ei={$elementId}` (edit for your host name).
+    * **Action URL**: `https://example.com/action/d/{$documentId}/{$workspaceOrVersion}/{$workspaceOrVersionId}/e/{$elementId}/panel` (edit for your host name).
     * **Icon**: The Camel icon was sourced from [here](https://www.svgrepo.com/svg/317181/camel) until someone draws something better.
 * Download the code from the repository.
 * Copy `.env.example` to `data/.env`.

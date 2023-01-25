@@ -1,0 +1,43 @@
+body {
+    font-family: Flama, "Open Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 14px;
+    padding-top: 8px;
+    margin: 0;
+}
+
+.tab-bar {
+    color: #1651b0;
+    border-bottom: #1651b0 2px solid;
+    height: 20px;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 10pt;
+    font-weight: 500;
+}
+
+.refresh-button {
+    background: url(/images/mdi-refresh.svg) no-repeat;
+    border: none;
+    width: 14pt;
+    height: 14pt;
+    margin-left: 4px;
+    vertical-align: middle;
+    cursor: pointer;
+}
+
+.content {
+    padding-left: 5px;
+    padding-right: 5px; 
+}
+
+h1 {
+    font-size: 12pt;
+    font-weight: 500;
+}
+
+footer {
+    font-style: italic;
+    padding: 10px 5px 0 5px;
+    border-top: #1651b0 2px solid;
+}

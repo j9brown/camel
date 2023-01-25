@@ -1,8 +1,9 @@
 const fs = require('fs');
 const express = require('express');
 const session = require('express-session');
-const https = require('https')
-const http = require('http')
+const handlebars = require('express-handlebars');
+const https = require('https');
+const http = require('http');
 const passport = require('passport');
 const refresh = require('passport-oauth2-refresh');
 const OnshapeStrategy = require('passport-onshape');
@@ -24,7 +25,16 @@ try {
   process.exit(1);
 }
 
-const app = express()
+express.static.mime.define({'text/plain': ['nc']});
+
+const app = express();
+
+// Enable the handlebars template engine.
+app.engine('handlebars', handlebars.engine());
+app.set('view engine', 'handlebars');
+
+// Serve static content.
+app.use(express.static('static'));
 
 // Redirect all non-secure traffic to HTTPS.
 app.use((req, res, next) => {
@@ -134,8 +144,8 @@ app.use('/oauth/redirect',
   (req, res, next) => {
     passport.authenticate('onshape', {}, (err, user, info) => {
       let redirectUri = req.query.state;
-      if (err)
-        return res.redirect(redirectUri ? redirectUri : `/?authsuccess=false`);
+      if (err || !user)
+        return res.redirect(`/oauth/denied`);
   
       req.login(user, (err) => {
         if (err)
@@ -144,20 +154,27 @@ app.use('/oauth/redirect',
         req.session.save((err) => {
           if (err)
             return next(err); // report internal server error
-          return res.redirect(redirectUri ? redirectUri : `/?authsuccess=true`);
+          return res.redirect(redirectUri ? redirectUri : `/`);
         });
       });
     })(req, res, next);
   });
 
-// Placeholder front page.
-app.get('/',
+// Called when the user denies authorization to the application.
+app.get('/oauth/denied',
   (req, res, next) => {
-    return res.send(`Please install Camel from the OnShape app store. Access the app from the right panel in a Part Studio.`);
+    return res.render('oauth-denied');
   });
 
-// All pages under '/view' require authentication.
-app.use('/view',
+// There's no front page since this application is meant to be embedded in OnShape.
+// Redirect curious visitors to the project's home.
+app.get('/',
+  (req, res, next) => {
+    return res.redirect(process.env.MAIN_PAGE_REDIRECT);
+  });
+
+// All pages under '/action' require authentication.
+app.use('/action',
   (req, res, next) => {
     if (!req.isAuthenticated()) {
       let state = req.originalUrl;
@@ -166,57 +183,53 @@ app.use('/view',
     next();
   });
 
-app.get('/view/cam',
+// The view that is embedded as an iframe within a Part Studio right side panel.
+app.get('/action/d/:documentId/:workspaceOrVersion/:workspaceOrVersionId/e/:elementId/panel',
   (req, res, next) => {
-    let context = {
-      documentId: req.query.di,
-      workspaceOrVersion: req.query.wv,
-      workspaceOrVersionId: req.query.wvi,
-      elementId: req.query.ei,
+    const context = {
+      documentId: req.params.documentId,
+      workspaceOrVersion: req.params.workspaceOrVersion,
+      workspaceOrVersionId: req.params.workspaceOrVersionId,
+      elementId: req.params.elementId,
       user: req.user,
     };
 
-    getFileIndex(context).then((fileIndex) => {
-      if (fileIndex.length === 0) {
-        res.send('There are no CAM files yet.');
-      } else {
-        getFile(context, fileIndex, fileIndex[0].fileName).then((data) => {
-          res.send(`<pre>${data}</pre>`);
-        }).catch(err => {
-          res.send(`Error ${err}`);
-        });
-      }
+    getFileNames(context).then((files) => {
+      res.render('panel', { context, files });
     }).catch((err) => {
-      res.send(`Error ${err}`);
+      res.render('panel', { error: err.toString() });
     });
   });
 
-http.createServer(app).listen(HTTP_PORT, () => {
-  console.log(`Listening for HTTP connections on port ${HTTP_PORT}`);
-});
+// File download page.
+app.get('/action/d/:documentId/:workspaceOrVersion/:workspaceOrVersionId/e/:elementId/f/:fileName/download',
+  (req, res, next) => {
+    const context = {
+      documentId: req.params.documentId,
+      workspaceOrVersion: req.params.workspaceOrVersion,
+      workspaceOrVersionId: req.params.workspaceOrVersionId,
+      elementId: req.params.elementId,
+      user: req.user,
+    };
+    const fileName = req.params.fileName;
 
-https.createServer({ key: tls_key, cert: tls_cert }, app).listen(HTTPS_PORT, () => {
-  console.log(`Listening for HTTPS connections on port ${HTTPS_PORT}`);
-});
+    getFileContents(context, fileName).then((contents) => {
+      res.attachment(fileName).send(contents);
+    }, (error) => {
+      res.status(404).send(error.toString());
+    });
+  });
 
-function getFileIndex(context) {
+function getFileNames(context) {
   // A valid response looks like this:
   // {
   //   "result": {
-  //     "btType": "com.belmonttech.serialize.fsvalue.BTFSValueMap",
-  //     "value": [
+  //     "btType": "com.belmonttech.serialize.fsvalue.BTFSValueArray",
+  //     "value":[
   //       {
-  //         "btType": "BTFSValueMapEntry-2077",
-  //         "value": {
-  //           "btType": "com.belmonttech.serialize.fsvalue.BTFSValueString",
-  //           "value": "camelFile0",
-  //           "typeTag": ""
-  //         },
-  //         "key": {
-  //           "btType": "com.belmonttech.serialize.fsvalue.BTFSValueString",
-  //           "value": "CAM Demo.nc",
-  //           "typeTag": ""
-  //         }
+  //         "btType": "com.belmonttech.serialize.fsvalue.BTFSValueString",
+  //         "value": "CAM Demo.nc",
+  //         "typeTag": ""
   //       }
   //     ],
   //     "typeTag": ""
@@ -224,24 +237,25 @@ function getFileIndex(context) {
   //   <lots more stuff>
   // }
   return new Promise((resolve, reject) => {
-    evalFeatureScript(context, 'return getVariable(context, "camelFileIndex");').then((out) => {
-      let result = out.data.result;
-      if (result === null)
-        return resolve([]); // There were no files
-
-      if (result.btType !== 'com.belmonttech.serialize.fsvalue.BTFSValueMap')
-        return reject(new Error('Could not get the file index from the Part Studio'));
-
-      resolve(result.value.map((entry) => {
-        return { name: entry.key.value, variable: entry.value.value };
-      }));
+    evalFeatureScript(context, `
+        try silent {
+          return keys(getVariable(context, "camelFileIndex"));
+        }
+        return [];
+      `).then((out) => {
+      const result = out.data.result;
+      if (result !== null
+          && result.btType === 'com.belmonttech.serialize.fsvalue.BTFSValueArray') {
+        return resolve(result.value.map((entry) => entry.value));
+      }
+      return reject(new Error('Could not get the file index'));
     }).catch((err) => {
-      return reject(new Error(`Could not get the file index from the Part Studio: ${err}`));
+      return reject(new Error('Could not get the file index'));
     });
   });
 }
 
-function getFile(context, fileIndex, fileName) {
+function getFileContents(context, fileName) {
   // A valid response looks like this:
   // {
   //   "result": {
@@ -252,28 +266,36 @@ function getFile(context, fileIndex, fileName) {
   //   <lots more stuff>
   // }
   return new Promise((resolve, reject) => {
-    let entry = fileIndex.find((entry) => entry.fileName === fileName);
-    if (entry === undefined)
+    evalFeatureScript(context, `
+        try silent {
+          var files = getVariable(context, "camelFileIndex");
+          var variable = files["${escapeFeatureScriptString(fileName)}"];
+          if (variable != undefined) {
+            return getVariable(context, variable);
+          }
+        }
+        throw "File not found";
+      `).then((out) => {
+      const result = out.data.result;
+      if (result !== null
+          && result.btType === 'com.belmonttech.serialize.fsvalue.BTFSValueString') {
+        return resolve(result.value);
+      }
       return reject(new Error('File not found'));
-
-    // Guard against a possible FeatureScript injection attack and other malformed data.
-    let variable = entry.variable;
-    if (!/^camelFile[0-9]+$/.test(variable))
-      reject(new Error('The file index is malformed'));
-
-    evalFeatureScript(context, `return getVariable(context, "${variable}");`).then((out) => {
-      let result = out.data.result;
-      if (result === null)
-        return reject(new Error('File not found'));
-
-      if (result.btType !== 'com.belmonttech.serialize.fsvalue.BTFSValueString')
-        return reject(new Error('The file index is malformed'));
-
-      resolve(result.value);
     }).catch((err) => {
-      return reject(new Error(`Could not get the file: ${err}`));
+      return reject(new Error('Could not download the file'));
     });
   });
+}
+
+function escapeFeatureScriptString(str) {
+  // To prevent possible FeatureScript injection attacks, we escape every character
+  // in the string. This is overkill but easy and sufficient.
+  let result = "";
+  for (let i = 0; i < str.length; i++) {
+    result += '\\u' + str.charCodeAt(i).toString(16).padStart(4, '0');
+  }
+  return result;
 }
 
 function evalFeatureScript(context, fn) {
@@ -284,3 +306,12 @@ function evalFeatureScript(context, fn) {
     onshapeUser: context.user,
   });
 }
+
+// Start the server
+http.createServer(app).listen(HTTP_PORT, () => {
+  console.log(`Listening for HTTP connections on port ${HTTP_PORT}`);
+});
+
+https.createServer({ key: tls_key, cert: tls_cert }, app).listen(HTTPS_PORT, () => {
+  console.log(`Listening for HTTPS connections on port ${HTTPS_PORT}`);
+});

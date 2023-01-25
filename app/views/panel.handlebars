@@ -1,0 +1,20 @@
+<div class="tab-bar">
+    <span class="tab-name">CAM files</span>
+    <button type="button" class="refresh-button" onClick="window.location.reload()" />
+</div>
+
+<div class="content">
+{{#if error}}
+    <h1>Error retrieving list of files</h1>
+    <p>{{error}}</p>
+{{else if files.length}}
+    <h1>Files available for download</h1>
+    <ul>
+    {{#each files}}
+        <li><a href="f/{{.}}/download" download="{{.}}">{{.}}</a></li>
+    {{/each}}
+    </ul>
+{{else}}
+    <h1>No files available for download</h1>
+{{/if}}
+</div>
