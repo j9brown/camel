@@ -4,6 +4,7 @@ const session = require('express-session');
 const https = require('https')
 const http = require('http')
 const passport = require('passport');
+const refresh = require('passport-oauth2-refresh');
 const OnshapeStrategy = require('passport-onshape');
 const process = require('process');
 const MemoryStore = require('memorystore')(session);
@@ -22,11 +23,6 @@ try {
   console.error('Cannot read TLS certificates from ${CERTS_DIR}.  Exiting.');
   process.exit(1);
 }
-
-const api = axios.create({
-  baseURL: process.env.ONSHAPE_API_URL,
-  timeout: 10000,
-});
 
 const app = express()
 
@@ -54,8 +50,7 @@ app.use(passport.initialize());
 
 // Transforms user into a value that will be stored in req.session.passport.user.
 // We don't need to do anything special here because the user profile data is small
-// and we only need it for the scope of the session requests so we don't need to
-// persist it into a database.
+// and transient. We only need to keep it in memory for the lifetime of the server.
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((obj, done) => done(null, obj));
 
@@ -63,7 +58,7 @@ passport.deserializeUser((obj, done) => done(null, obj));
 app.use(passport.session());
 
 // Adds an authentication strategy for calling OnShape APIs and getting OnShape user information.
-passport.use(new OnshapeStrategy({
+const onshapeStrategy = new OnshapeStrategy({
     clientID: process.env.ONSHAPE_APP_CLIENT_ID,
     clientSecret: process.env.ONSHAPE_APP_CLIENT_SECRET,
     callbackURL: '/oauth/redirect',
@@ -74,7 +69,54 @@ passport.use(new OnshapeStrategy({
   (accessToken, refreshToken, profile, done) => {
     let user = { accessToken, refreshToken, profile };
     return done(null, user);
-  }));
+  });
+passport.use(onshapeStrategy);
+refresh.use(onshapeStrategy);
+
+// OnShape API accessor
+const api = axios.create({
+  baseURL: process.env.ONSHAPE_API_URL,
+  timeout: 10000,
+});
+
+// Attaches the OnShape user access token to the request header.
+api.interceptors.request.use((config) => {
+    const onshapeUser = config.onshapeUser;
+    if (onshapeUser) {
+      config.headers.Authorization = `Bearer ${onshapeUser.accessToken}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error)
+  });
+
+// Handles authentication errors and automatically refreshes the OnShape user
+// access token if needed.
+api.interceptors.response.use((response) => {
+  return response;
+}, (error) => {
+  const config = error.config;
+  const onshapeUser = config.onshapeUser;
+  if (!onshapeUser
+      || error.response.status !== 401
+      || config.onshapeAccessTokenRefreshed) {
+    return Promise.reject(error);
+  }
+
+  config.onshapeAccessTokenRefreshed = true;
+  return new Promise((resolve, reject) => {
+    refresh.requestNewAccessToken('onshape', onshapeUser.refreshToken,
+        (error, accessToken, refreshToken) => {
+      if (error) {
+        return reject(error);
+      }
+      onshapeUser.accessToken = accessToken;
+      onshapeUser.refreshToken = refreshToken;
+      api(config).then(resolve, reject);
+    });
+  });
+});
 
 // Called by OnShape when the user clicks the button to grant this application
 // access to their documents. The optional 'redirectOnshapeUri' query parameter tells
@@ -98,8 +140,6 @@ app.use('/oauth/redirect',
       req.login(user, (err) => {
         if (err)
           return next(err); // report internal server error
-
-        console.log(`User logged in: ${user.profile.displayName}`);
 
         req.session.save((err) => {
           if (err)
@@ -237,9 +277,10 @@ function getFile(context, fileIndex, fileName) {
 }
 
 function evalFeatureScript(context, fn) {
-  return api.post(`/v5/partstudios/d/${context.documentId}/${context.workspaceOrVersion}/${context.workspaceOrVersionId}/e/${context.elementId}/featurescript`, {
+  let url = `/v5/partstudios/d/${context.documentId}/${context.workspaceOrVersion}/${context.workspaceOrVersionId}/e/${context.elementId}/featurescript`;
+  return api.post(url, {
     script: `function (context is Context, queries is map) { ${fn} }`,
   }, {
-    headers: { 'Authorization': `Bearer ${context.user.accessToken}`},
+    onshapeUser: context.user,
   });
 }
