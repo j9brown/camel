@@ -195,7 +195,7 @@ app.get('/action/d/:documentId/:workspaceOrVersion/:workspaceOrVersionId/e/:elem
     };
 
     getFileNames(context).then((files) => {
-      res.render('panel', { context, files });
+      res.render('panel', { files });
     }).catch((err) => {
       res.render('panel', { error: err.toString() });
     });
@@ -219,6 +219,25 @@ app.get('/action/d/:documentId/:workspaceOrVersion/:workspaceOrVersionId/e/:elem
       res.status(404).send(error.toString());
     });
   });
+
+// File viewer page.
+app.get('/action/d/:documentId/:workspaceOrVersion/:workspaceOrVersionId/e/:elementId/f/:fileName/view',
+(req, res, next) => {
+  const context = {
+    documentId: req.params.documentId,
+    workspaceOrVersion: req.params.workspaceOrVersion,
+    workspaceOrVersionId: req.params.workspaceOrVersionId,
+    elementId: req.params.elementId,
+    user: req.user,
+  };
+  const fileName = req.params.fileName;
+
+  getFileContents(context, fileName).then((contents) => {
+    res.render('view-file', { fileName, contents });
+  }, (error) => {
+    res.redirect('../../../panel');
+  });
+});
 
 function getFileNames(context) {
   // A valid response looks like this:

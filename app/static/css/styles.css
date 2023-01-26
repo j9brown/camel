@@ -17,7 +17,17 @@ body {
 }
 
 .refresh-button {
-    background: url(/images/mdi-refresh.svg) no-repeat;
+    background: url(/mdi/refresh.svg) no-repeat;
+    border: none;
+    width: 14pt;
+    height: 14pt;
+    margin-left: 4px;
+    vertical-align: middle;
+    cursor: pointer;
+}
+
+.back-button {
+    background: url(/mdi/arrow-left.svg) no-repeat;
     border: none;
     width: 14pt;
     height: 14pt;
