@@ -78,7 +78,7 @@ You'll need to be familiar with Docker and with how to set up a web server.
     * **Name**: `CAM panel`
     * **Location**: `Element right panel`
     * **Context**: `Inside part studio`
-    * **Action URL**: `https://example.com/action/d/{$documentId}/{$workspaceOrVersion}/{$workspaceOrVersionId}/e/{$elementId}/panel` (edit for your host name).
+    * **Action URL**: `https://example.com/action/d/{$documentId}/{$workspaceOrVersion}/{$workspaceOrVersionId}/e/{$elementId}/panel?configuration={$configuration}` (edit for your host name).
     * **Icon**: The Camel icon was sourced from [here](https://www.svgrepo.com/svg/317181/camel) until someone draws something better.
 * Download the application's source code.
 * Copy `.env.example` to `data/.env`.

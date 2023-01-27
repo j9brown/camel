@@ -11,7 +11,7 @@
     <h1>Files available for download</h1>
     <ul>
     {{#each files}}
-        <li><a href="f/{{.}}/download" download="{{.}}">{{.}}</a> (<a href="f/{{.}}/view">view</a>)</li>
+        <li><a href="f/{{.}}/download{{../query}}" download="{{.}}">{{.}}</a> (<a href="f/{{.}}/view{{../query}}">view</a>)</li>
     {{/each}}
     </ul>
 {{else}}

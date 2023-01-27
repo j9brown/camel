@@ -21,7 +21,7 @@ try {
   tls_key = fs.readFileSync(CERTS_DIR + '/privkey.pem');
   tls_cert = fs.readFileSync(CERTS_DIR + '/cert.pem');
 } catch {
-  console.error('Cannot read TLS certificates from ${CERTS_DIR}.  Exiting.');
+  console.error(`Cannot read TLS certificates from ${CERTS_DIR}.  Exiting.`);
   process.exit(1);
 }
 
@@ -191,13 +191,14 @@ app.get('/action/d/:documentId/:workspaceOrVersion/:workspaceOrVersionId/e/:elem
       workspaceOrVersion: req.params.workspaceOrVersion,
       workspaceOrVersionId: req.params.workspaceOrVersionId,
       elementId: req.params.elementId,
+      configuration: parseConfigurationFromQuery(req.query.configuration),
       user: req.user,
     };
 
     getFileNames(context).then((files) => {
-      res.render('panel', { files });
+      res.render('panel', { files, query: encodeQuery(context.configuration) });
     }).catch((err) => {
-      res.render('panel', { error: err.toString() });
+      res.render('panel', { error: err.toString(), query: encodeQuery(context.configuration) });
     });
   });
 
@@ -209,6 +210,7 @@ app.get('/action/d/:documentId/:workspaceOrVersion/:workspaceOrVersionId/e/:elem
       workspaceOrVersion: req.params.workspaceOrVersion,
       workspaceOrVersionId: req.params.workspaceOrVersionId,
       elementId: req.params.elementId,
+      configuration: parseConfigurationFromQuery(req.query.configuration),
       user: req.user,
     };
     const fileName = req.params.fileName;
@@ -222,22 +224,23 @@ app.get('/action/d/:documentId/:workspaceOrVersion/:workspaceOrVersionId/e/:elem
 
 // File viewer page.
 app.get('/action/d/:documentId/:workspaceOrVersion/:workspaceOrVersionId/e/:elementId/f/:fileName/view',
-(req, res, next) => {
-  const context = {
-    documentId: req.params.documentId,
-    workspaceOrVersion: req.params.workspaceOrVersion,
-    workspaceOrVersionId: req.params.workspaceOrVersionId,
-    elementId: req.params.elementId,
-    user: req.user,
-  };
-  const fileName = req.params.fileName;
+  (req, res, next) => {
+    const context = {
+      documentId: req.params.documentId,
+      workspaceOrVersion: req.params.workspaceOrVersion,
+      workspaceOrVersionId: req.params.workspaceOrVersionId,
+      elementId: req.params.elementId,
+      configuration: parseConfigurationFromQuery(req.query.configuration),
+      user: req.user,
+    };
+    const fileName = req.params.fileName;
 
-  getFileContents(context, fileName).then((contents) => {
-    res.render('view-file', { fileName, contents });
-  }, (error) => {
-    res.redirect('../../../panel');
+    getFileContents(context, fileName).then((contents) => {
+      res.render('view-file', { fileName, contents, query: encodeQuery(context.configuration) });
+    }, (error) => {
+      res.redirect('../../../panel');
+    });
   });
-});
 
 function getFileNames(context) {
   // A valid response looks like this:
@@ -318,12 +321,27 @@ function escapeFeatureScriptString(str) {
 }
 
 function evalFeatureScript(context, fn) {
-  let url = `/v5/partstudios/d/${context.documentId}/${context.workspaceOrVersion}/${context.workspaceOrVersionId}/e/${context.elementId}/featurescript`;
+  let url = `/v5/partstudios/d/${context.documentId}/${context.workspaceOrVersion}/${context.workspaceOrVersionId}/e/${context.elementId}/featurescript${encodeQuery(context.configuration)}`;
   return api.post(url, {
     script: `function (context is Context, queries is map) { ${fn} }`,
   }, {
     onshapeUser: context.user,
   });
+}
+
+function parseConfigurationFromQuery(param) {
+  // Curiously, OnShape sends '{$configuration}' when there is no configuration
+  // instead of sending an empty value.
+  if (param === undefined || param === '{$configuration}')
+    return '';
+  return param;
+}
+
+function encodeQuery(configuration) {
+  if (configuration) {
+    return `?configuration=${encodeURIComponent(configuration)}`;
+  }
+  return '';
 }
 
 // Start the server
