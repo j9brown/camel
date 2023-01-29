@@ -135,7 +135,7 @@ app.use('/oauth/signin',
   (req, res, next) => {
     // This call to authenticate will redirect to the OnShape access grant page.
     // Remember where to return from authentication in 'state'.
-    let state = req.query.redirectOnshapeUri;
+    let state = encodeState(req.query.redirectOnshapeUri);
     return passport.authenticate('onshape', { state })(req, res, next);
   });
 
@@ -143,7 +143,7 @@ app.use('/oauth/signin',
 app.use('/oauth/redirect',
   (req, res, next) => {
     passport.authenticate('onshape', {}, (err, user, info) => {
-      let redirectUri = req.query.state;
+      let redirectUri = decodeState(req.query.state);
       if (err || !user)
         return res.redirect(`/oauth/denied`);
   
@@ -177,7 +177,7 @@ app.get('/',
 app.use('/action',
   (req, res, next) => {
     if (!req.isAuthenticated()) {
-      let state = req.originalUrl;
+      let state = encodeState(req.originalUrl);
       return passport.authenticate('onshape', { state })(req, res, next);
     }
     next();
@@ -342,6 +342,14 @@ function encodeQuery(configuration) {
     return `?configuration=${encodeURIComponent(configuration)}`;
   }
   return '';
+}
+
+function encodeState(redirectUri) {
+  return redirectUri ? encodeURIComponent(redirectUri) : '';
+}
+
+function decodeState(state) {
+  return state ? decodeURIComponent(state) : '';
 }
 
 // Start the server
