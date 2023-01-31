@@ -10,6 +10,7 @@ const OnshapeStrategy = require('passport-onshape');
 const process = require('process');
 const MemoryStore = require('memorystore')(session);
 const axios = require('axios');
+const Zip = require('adm-zip');
 
 const HTTP_PORT = 80;
 const HTTPS_PORT = 443;
@@ -242,6 +243,33 @@ app.get('/action/d/:documentId/:workspaceOrVersion/:workspaceOrVersionId/e/:elem
     });
   });
 
+// Zip file download page.
+app.get('/action/d/:documentId/:workspaceOrVersion/:workspaceOrVersionId/e/:elementId/zip',
+  (req, res, next) => {
+    const context = {
+      documentId: req.params.documentId,
+      workspaceOrVersion: req.params.workspaceOrVersion,
+      workspaceOrVersionId: req.params.workspaceOrVersionId,
+      elementId: req.params.elementId,
+      configuration: parseConfigurationFromQuery(req.query.configuration),
+      user: req.user,
+    };
+
+    getAllFileContents(context).then((files) => {
+      let archive = Zip();
+      files.forEach(entry => {
+        archive.addFile(entry[0], Buffer.from(entry[1], "utf-8"));
+      });
+      archive.toBuffer((buffer) => {
+        res.attachment('CAM Files.zip').send(buffer);
+      }, (error) => {
+        res.status(500).send(error.toString());
+      });
+    }, (error) => {
+      res.status(404).send(error.toString());
+    });
+  });
+
 function getFileNames(context) {
   // A valid response looks like this:
   // {
@@ -306,6 +334,31 @@ function getFileContents(context, fileName) {
       return reject(new Error('File not found'));
     }).catch((err) => {
       return reject(new Error('Could not download the file'));
+    });
+  });
+}
+
+function getAllFileContents(context) {
+  return new Promise((resolve, reject) => {
+    evalFeatureScript(context, `
+        try silent {
+          var files = getVariable(context, "camelFileIndex");
+          var results = {};
+          for (var fileName in keys(files)) {
+            results[fileName] = getVariable(context, files[fileName]);
+          }
+          return results;
+        }
+        return {};
+      `).then((out) => {
+      const result = out.data.result;
+      if (result !== null
+          && result.btType === 'com.belmonttech.serialize.fsvalue.BTFSValueMap') {
+        return resolve(result.value.map((entry) => [entry.key.value, entry.value.value]));
+      }
+      return reject(new Error('Could not download all of the files'));
+    }).catch((err) => {
+      return reject(new Error('Could not download all of the files'));
     });
   });
 }

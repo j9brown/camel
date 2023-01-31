@@ -14,6 +14,9 @@
         <li><a href="f/{{.}}/download{{../query}}" download="{{.}}">{{.}}</a> (<a href="f/{{.}}/view{{../query}}">view</a>)</li>
     {{/each}}
     </ul>
+    <p>
+        Download all files: <a href="zip{{../query}}" download="CAM Files.zip">CAM Files.zip</a>
+    </p>
 {{else}}
     <h1>No files available for download</h1>
 {{/if}}
