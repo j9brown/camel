@@ -16,7 +16,6 @@ const HTTP_PORT = 80;
 const HTTPS_PORT = 443;
 const DATA_DIR = "/data";
 const CERTS_DIR = DATA_DIR + '/certs';
-require('dotenv').config({ path: '/data/.env'});
 
 try {
   tls_key = fs.readFileSync(CERTS_DIR + '/privkey.pem');

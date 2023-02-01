@@ -61,31 +61,32 @@ in your own way.
 
 ## How to set up your own instance
 
-If you don't want to use the primary instance of Camel or if you'd like to make contributions,
+If you don't want to use the production instance of Camel or if you'd like to make contributions,
 you can run your own instance. Here's how to do it.
 
 You'll need to be familiar with Docker and with how to set up a web server.
 
-* Visit the [OnShape Developer Portal](https://dev-portal.onshape.com/) and register your application. You'll need to provide some information to identify your application. When finished, you will receive an OAuth2 client id and secret, save them for later and keep them private!
-  * **Name**: A unique name for your instance. The primary instance is called `Camel`.
-  * **Primary format**: A unique identifier for your instance. The primary instance is identified as `camel.brownstudios.dev`.
+* Visit the [OnShape Developer Portal](https://dev-portal.onshape.com/) and click **Create new OAuth application**. You'll need to provide some information to identify your application. When finished, you will receive an OAuth2 client id and secret, save them for later and keep them private!
+  * **Name**: A unique name for your instance. The production instance is called `Camel`.
+  * **production format**: A unique identifier for your instance. The production instance is identified as `camel.brownstudios.dev`.
   * **Redirect URLs**: `https://example.com/oauth/redirect` (edit for your host name).
   * **OAuth URL**: `https://example.com/oauth/signin` (edit for your host name).
   * **Permissions**: Only needs **read your documents**.
-* Once your application has been registered, use the OnShape Developer Portal to add the necessary extensions.
+* In the **Extensions** tab of the portal, click **Add extension** to add the necessary extensions.
   * Panel
     * **Name**: `CAM panel`
     * **Location**: `Element right panel`
     * **Context**: `Inside part studio`
     * **Action URL**: `https://example.com/action/d/{$documentId}/{$workspaceOrVersion}/{$workspaceOrVersionId}/e/{$elementId}/panel?configuration={$configuration}` (edit for your host name).
-    * **Icon**: The Camel icon was sourced from [here](https://www.svgrepo.com/svg/317181/camel) until someone draws something better.
+    * **Icon**: Upload `icons/camel.svg`.
+* In the **Details** tab of the portal, click **Create store entry** to publish the application to the OnShape App Store.  Fill in the form as required.
 * Download the application's source code.
-* Copy `.env.example` to `data/.env`.
-* Edit `data/.env` as follows.
+* Copy `.env.example` to `.env`.
+* Edit `.env` as follows.
   * **`SESSION_ID_COOKIE_SECRET`**: Set this variable to a randomly generated string and keep it secret.
-  * **`ONSHAPE_APP_CLIENT_ID`**: Set this variable to the OAuth2 client identifier you received from the OnShape Developer Portal.
-  * *`ONSHAPE_APP_CLIENT_SECRET`**: Set this variable to the OAuth2 client secret you received from the OnShape Developer Portal and keep it secret.
-  * **`EXTERNAL_HOSTNAME`**: Set this variable to the host name of the web server you will run the application on. The primary instance is at `camel.brownstudios.dev`.
+  * **`ONSHAPE_APP_CLIENT_ID`**: Set this variable to the OAuth2 client identifier you received from the OnShape Developer Portal. Make sure to copy the string precisely, including any trailing `=` signs.
+  * **`ONSHAPE_APP_CLIENT_SECRET`**: Set this variable to the OAuth2 client secret you received from the OnShape Developer Portal and keep it secret. Make sure to copy the string precisely, including any trailing `=` signs.
+  * **`EXTERNAL_HOSTNAME`**: Set this variable to the host name of the web server you will run the application on. The production instance is at `camel.brownstudios.dev`.
 * Obtain an SSL certificate for your host name using a method of your choice and copy your certificate to `data/certs/cert.pem` and your private key to `data/certs/privkey.pem`. If you have [certbot](https://certbot.eff.org/) installed, you can run the `update-certs.sh` shell script to automatically obtain an SSL certificate from [Let's Encrypt](https://letsencrypt.org/) and store it in the correct location.
 * Build the Docker image: `docker-compose build`.
 * Run the Docker image: `docker-compose up`.

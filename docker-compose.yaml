@@ -1,15 +1,13 @@
 version: '3'
 services:
   camel:
-    container_name: camel
+    container_name: ${DOCKER_CONTAINER}
     build: .
-    image: camel:latest
+    image: ${DOCKER_CONTAINER}:latest
     ports:
-      - "8001:80"
-      - "8002:443"
+      - "${DOCKER_HTTP_PORT}:80"
+      - "${DOCKER_HTTPS_PORT}:443"
     volumes:
       - "./data:/data"
-    environment:
-      - NODE_ENV=production
-      - DEBUG=
+    env_file: .env
     restart: always
