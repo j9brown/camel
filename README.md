@@ -61,14 +61,14 @@ in your own way.
 
 ## How to set up your own instance
 
-If you don't want to use the official instance of Camel or if you'd like to make contributions,
+If you don't want to use the primary instance of Camel or if you'd like to make contributions,
 you can run your own instance. Here's how to do it.
 
 You'll need to be familiar with Docker and with how to set up a web server.
 
 * Visit the [OnShape Developer Portal](https://dev-portal.onshape.com/) and register your application. You'll need to provide some information to identify your application. When finished, you will receive an OAuth2 client id and secret, save them for later and keep them private!
-  * **Name**: A unique name for your instance. The official instance is called `Camel`.
-  * **Primary format**: A unique identifier for your instance. The official instance is identified as `camel.brownstudios.dev`.
+  * **Name**: A unique name for your instance. The primary instance is called `Camel`.
+  * **Primary format**: A unique identifier for your instance. The primary instance is identified as `camel.brownstudios.dev`.
   * **Redirect URLs**: `https://example.com/oauth/redirect` (edit for your host name).
   * **OAuth URL**: `https://example.com/oauth/signin` (edit for your host name).
   * **Permissions**: Only needs **read your documents**.
@@ -85,7 +85,7 @@ You'll need to be familiar with Docker and with how to set up a web server.
   * **`SESSION_ID_COOKIE_SECRET`**: Set this variable to a randomly generated string and keep it secret.
   * **`ONSHAPE_APP_CLIENT_ID`**: Set this variable to the OAuth2 client identifier you received from the OnShape Developer Portal.
   * *`ONSHAPE_APP_CLIENT_SECRET`**: Set this variable to the OAuth2 client secret you received from the OnShape Developer Portal and keep it secret.
-  * **`EXTERNAL_HOSTNAME`**: Set this variable to the host name of the web server you will run the application on. The official instance is at `camel.brownstudios.dev`.
+  * **`EXTERNAL_HOSTNAME`**: Set this variable to the host name of the web server you will run the application on. The primary instance is at `camel.brownstudios.dev`.
 * Obtain an SSL certificate for your host name using a method of your choice and copy your certificate to `data/certs/cert.pem` and your private key to `data/certs/privkey.pem`. If you have [certbot](https://certbot.eff.org/) installed, you can run the `update-certs.sh` shell script to automatically obtain an SSL certificate from [Let's Encrypt](https://letsencrypt.org/) and store it in the correct location.
 * Build the Docker image: `docker-compose build`.
 * Run the Docker image: `docker-compose up`.
