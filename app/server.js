@@ -160,7 +160,6 @@ app.use('/oauth/signin',
 app.use('/oauth/redirect',
   (req, res, next) => {
     passport.authenticate('onshape', {}, (err, user, info) => {
-      let redirectUri = decodeState(req.query.state);
       if (err || !user)
         return res.redirect(`/oauth/denied`);
   
@@ -171,7 +170,9 @@ app.use('/oauth/redirect',
         req.session.save((err) => {
           if (err)
             return next(err); // report internal server error
-          return res.redirect(redirectUri ? redirectUri : `/`);
+
+          let redirectUri = decodeState(req.query.state);
+          return res.redirect(redirectUri || '/');
         });
       });
     })(req, res, next);
@@ -181,6 +182,22 @@ app.use('/oauth/redirect',
 app.get('/oauth/denied',
   (req, res, next) => {
     return res.render('oauth-denied');
+  });
+
+// Called after authentication to check whether the session cookie is valid.
+// If so, it redirects back to the action that triggered authentication.
+// Otherwise, it informs the user that the browser may be blocking the cookie
+// and provides them with alternatives.
+app.get('/oauth/session',
+  (req, res, next) => {
+    let actionUri = decodeState(req.query.action);
+    if (!actionUri)
+      return res.redirect('/'); // how did we get here?
+
+    if (req.isAuthenticated())
+      return res.redirect(actionUri);
+
+    res.render('oauth-session-lost', { actionUri });
   });
 
 // There's no front page since this application is meant to be embedded in OnShape.
@@ -194,7 +211,9 @@ app.get('/',
 app.use('/action',
   (req, res, next) => {
     if (!req.isAuthenticated()) {
-      let state = encodeState(req.originalUrl);
+      let actionUri = req.originalUrl;
+      let redirectUri = `/oauth/session?action=${encodeState(actionUri)}`;
+      let state = encodeState(redirectUri.toString());
       return passport.authenticate('onshape', { state })(req, res, next);
     }
     next();

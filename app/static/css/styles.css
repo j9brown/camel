@@ -46,6 +46,11 @@ h1 {
     font-weight: 500;
 }
 
+h2 {
+    font-size: 11pt;
+    font-weight: 500;
+}
+
 footer {
     font-style: italic;
     padding: 10px 5px 0 5px;
