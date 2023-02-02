@@ -16,7 +16,7 @@ body {
     font-weight: 500;
 }
 
-.refresh-button {
+#refresh-button {
     background: url(/mdi/refresh.svg) no-repeat;
     border: none;
     width: 14pt;
@@ -26,7 +26,7 @@ body {
     cursor: pointer;
 }
 
-.back-button {
+#back-button {
     background: url(/mdi/arrow-left.svg) no-repeat;
     border: none;
     width: 14pt;

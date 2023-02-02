@@ -1,13 +1,15 @@
-const fs = require('fs');
+const fs = require('node:fs');
+const http = require('node:http');
+const https = require('node:https');
+const process = require('node:process');
+
 const express = require('express');
 const session = require('express-session');
 const handlebars = require('express-handlebars');
-const https = require('https');
-const http = require('http');
 const passport = require('passport');
 const refresh = require('passport-oauth2-refresh');
 const OnshapeStrategy = require('passport-onshape');
-const process = require('process');
+const helmet = require('helmet');
 const MemoryStore = require('memorystore')(session);
 const axios = require('axios');
 const Zip = require('adm-zip');
@@ -16,6 +18,7 @@ const HTTP_PORT = 80;
 const HTTPS_PORT = 443;
 const DATA_DIR = "/data";
 const CERTS_DIR = DATA_DIR + '/certs';
+const BASE_URL = `https://${process.env.EXTERNAL_HOSTNAME}`;
 
 try {
   tls_key = fs.readFileSync(CERTS_DIR + '/privkey.pem');
@@ -29,6 +32,20 @@ express.static.mime.define({'text/plain': ['nc']});
 
 const app = express();
 
+// Configuration various security headers.
+app.disable('x-powered-by'); // don't advertise that we're using Express
+app.use(helmet.contentSecurityPolicy({
+  directives: {
+    frameAncestors: ['self', 'https://cad.onshape.com'], // only allow embedding by OnShape
+  },
+}));
+app.use(helmet.crossOriginEmbedderPolicy()); // only load resources from this origin
+app.use(helmet.crossOriginOpenerPolicy()); // block sharing of the window object
+app.use(helmet.crossOriginResourcePolicy()); // block access to our resources from other origins
+app.use(helmet.hsts()); // tell user agent that we will always require HTTPS
+app.use(helmet.noSniff()); // ask browser not to guess the mime type of downloaded files
+app.use(helmet.referrerPolicy()); // don't send Referrer headers
+
 // Enable the handlebars template engine.
 app.engine('handlebars', handlebars.engine());
 app.set('view engine', 'handlebars');
@@ -39,7 +56,7 @@ app.use(express.static('static'));
 // Redirect all non-secure traffic to HTTPS.
 app.use((req, res, next) => {
   if (!req.secure) {
-    return res.redirect(`https://${process.env.EXTERNAL_HOSTNAME}${req.url}`);
+    return res.redirect(`${BASE_URL}${req.url}`);
   }
   next();
 });
