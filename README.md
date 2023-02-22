@@ -6,7 +6,7 @@ Camel is a suite of CAM (Computer Aided Manufacturing) features for [OnShape](ht
 implemented in FeatureScript. It's an experimental hobby project that provides basic features for
 generating tool paths for driving CNC machines from within a Part Studio.
 
-If you don't already have the Camel features installed, [get them here](https://cad.onshape.com/documents/5892b0a436ab36124fe4db4b/w/782c826b12b074a8c7249ebb/e/390698553293f7f54851d374).
+If you don't already have the Camel features installed, [get them here](https://cad.onshape.com/documents/5892b0a436ab36124fe4db4b/w/782c826b12b074a8c7249ebb/e/2ed99a22b7f3f226e33a8245).
 
 ## Web application
 
