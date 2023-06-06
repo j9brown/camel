@@ -90,6 +90,7 @@ You'll need to be familiar with Docker and with how to set up a web server.
 * Obtain an SSL certificate for your host name using a method of your choice and copy your certificate to `data/certs/cert.pem` and your private key to `data/certs/privkey.pem`. If you have [certbot](https://certbot.eff.org/) installed, you can run the `update-certs.sh` shell script to automatically obtain an SSL certificate from [Let's Encrypt](https://letsencrypt.org/) and store it in the correct location.
 * Build the Docker image: `docker-compose build`.
 * Run the Docker image: `docker-compose up`.
+* A few months later when it's time to renew your SSL certificates, run the `restart-with-updated-certs.sh` script to stop the service, update your certificates from Let's Encrypt, and start the service again.
 
 Then visit your app's page in the [OnShape App Store](https://appstore.onshape.com/), subscribe to your
 shiny new app, grant it permissions, and have fun!
