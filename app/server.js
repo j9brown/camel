@@ -324,7 +324,12 @@ function getFileNames(context) {
   return new Promise((resolve, reject) => {
     evalFeatureScript(context, `
         try silent {
-          return keys(getVariable(context, "camelFileIndex"));
+          const state = getVariable(context, "@camelState");
+          return state.files is map ? keys(state.files) : [];
+        }
+        try silent { // old version
+          const index = getVariable(context, "camelFileIndex");
+          return keys(index);
         }
         return [];
       `).then((out) => {
@@ -352,11 +357,18 @@ function getFileContents(context, fileName) {
   // }
   return new Promise((resolve, reject) => {
     evalFeatureScript(context, `
+        const fileName = "${escapeFeatureScriptString(fileName)}";
         try silent {
-          var files = getVariable(context, "camelFileIndex");
-          var variable = files["${escapeFeatureScriptString(fileName)}"];
-          if (variable != undefined) {
-            return getVariable(context, variable);
+          const state = getVariable(context, "@camelState");
+          if (state.files[fileName] is string) {
+            return state.files[fileName];
+          }
+        }
+        try silent { // old version
+          const index = getVariable(context, "camelFileIndex");
+          const content = getVariable(context, index[fileName]);
+          if (content is string) {
+            return content;
           }
         }
         throw "File not found";
@@ -377,12 +389,16 @@ function getAllFileContents(context) {
   return new Promise((resolve, reject) => {
     evalFeatureScript(context, `
         try silent {
-          var files = getVariable(context, "camelFileIndex");
-          var results = {};
-          for (var fileName in keys(files)) {
-            results[fileName] = getVariable(context, files[fileName]);
+          const state = getVariable(context, "@camelState");
+          return state.files is map ? state.files : {};
+        }
+        try silent { // old version
+          const index = getVariable(context, "camelFileIndex");
+          var files = {};
+          for (var fileName in keys(index)) {
+            files[fileName] = getVariable(context, index[fileName]);
           }
-          return results;
+          return files;
         }
         return {};
       `).then((out) => {
