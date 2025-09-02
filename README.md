@@ -15,7 +15,7 @@ Camel from a right-side element panel in your OnShape Part Studios. Once you've 
 G-Code files, you can preview the results with a G-Code simulator such as [Camotics](https://camotics.org/)
 or load them into your CNC software to begin manufacturing right away!
 
-To use the Camel web application, you must [subscribe to it in the OnShape App Store](https://appstore.onshape.com/apps/CAM/I4R3GCXD4XN6MBLZ3LHPI5VGCVARDSCVUGE5QHY=/description). It's free and open source.
+To use the Camel web application, you must [subscribe to it in the OnShape App Store](https://cad.onshape.com/appstore/apps/CAM/63c0681dcf81c13b395388de). It's free and open source.
 
 Once you've subscribed to the application, you will find the new Camel panel in the right side of
 your OnShape Part Studios.
